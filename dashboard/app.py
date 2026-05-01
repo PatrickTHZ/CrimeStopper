@@ -19,24 +19,37 @@ RAW_DIR = ROOT / "data" / "raw" / "bocsar"
 MONTH_COL = re.compile(r"^\d{4}-\d{2}$")
 
 PALETTE = [
-    "#005f73",
-    "#ca6702",
-    "#0a9396",
-    "#ae2012",
-    "#7b2cbf",
-    "#2d6a4f",
-    "#bb3e03",
-    "#3a86ff",
-    "#9b2226",
-    "#5f0f40",
+    "#0A84FF",
+    "#30D158",
+    "#FF9F0A",
+    "#BF5AF2",
+    "#64D2FF",
+    "#FF453A",
+    "#FFD60A",
+    "#5E5CE6",
+    "#FF375F",
+    "#32D74B",
 ]
-HEAT_SCALE = ["#050505", "#12343b", "#005f73", "#0a9396", "#ee9b00", "#ae2012"]
-MAP_DENSITY_COLORS = {"Low": "#f4a261", "Medium": "#e76f51", "High": "#9b2226"}
-pio.templates.default = "plotly_dark"
+HEAT_SCALE = ["#050505", "#18202c", "#0A84FF", "#30D158", "#FF9F0A", "#FF453A"]
+MAP_DENSITY_COLORS = {"Low": "#FF9F0A", "Medium": "#FF453A", "High": "#BF5AF2"}
+SYSTEM_FONT = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, sans-serif"
+pio.templates["crimestoppers_apple_dark"] = go.layout.Template(
+    layout=go.Layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(255,255,255,0.025)",
+        font={"family": SYSTEM_FONT, "color": "#F5F5F7"},
+        title={"font": {"size": 20, "color": "#F5F5F7"}},
+        colorway=PALETTE,
+        xaxis={"gridcolor": "rgba(255,255,255,0.08)", "zerolinecolor": "rgba(255,255,255,0.14)"},
+        yaxis={"gridcolor": "rgba(255,255,255,0.08)", "zerolinecolor": "rgba(255,255,255,0.14)"},
+        legend={"font": {"color": "#D1D1D6"}},
+    )
+)
+pio.templates.default = "crimestoppers_apple_dark"
 
 
 st.set_page_config(
-    page_title="CrimeStoppers Crimes Analysus Dashboard",
+    page_title="Crime Analysis Dashboard | CrimeStoppers",
     page_icon="chart_with_upwards_trend",
     layout="wide",
 )
@@ -46,42 +59,96 @@ st.markdown(
     <style>
     :root {
         --surface: #000000;
-        --panel: #0f1117;
-        --panel-2: #151923;
-        --line: #2b3445;
-        --ink: #edf4ff;
-        --muted: #9aa8bd;
-        --teal: #0a9396;
-        --amber: #ee9b00;
-        --rust: #bb3e03;
-        --plum: #7b2cbf;
+        --panel: rgba(28, 28, 30, 0.72);
+        --panel-2: rgba(44, 44, 46, 0.78);
+        --line: rgba(255, 255, 255, 0.13);
+        --ink: #f5f5f7;
+        --muted: #a1a1a6;
+        --blue: #0A84FF;
+        --green: #30D158;
+        --orange: #FF9F0A;
+        --purple: #BF5AF2;
     }
-    .stApp { background: var(--surface); color: var(--ink); }
-    [data-testid="stHeader"] { background: rgba(0, 0, 0, 0.94); }
-    [data-testid="stSidebar"] { background: #080a0f; border-right: 1px solid var(--line); }
+    .stApp {
+        background:
+            linear-gradient(180deg, #050505 0%, #000000 42%, #030407 100%);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
+    }
+    [data-testid="stHeader"] {
+        background: rgba(0, 0, 0, 0.74);
+        backdrop-filter: blur(22px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    [data-testid="stSidebar"] {
+        background: rgba(12, 12, 14, 0.82);
+        backdrop-filter: blur(24px);
+        border-right: 1px solid var(--line);
+    }
     [data-testid="stSidebar"] * { color: var(--ink); }
     [data-testid="stSidebar"] [data-baseweb="radio"] label,
     [data-testid="stSidebar"] [data-baseweb="slider"] { color: var(--ink); }
-    h1, h2, h3 { letter-spacing: 0; }
+    .block-container { padding-top: 2rem; max-width: 1480px; }
+    h1, h2, h3 {
+        letter-spacing: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif;
+    }
     h1 { font-size: 2rem; font-weight: 720; margin-bottom: .1rem; }
     h2 { font-size: 1.25rem; margin-top: .4rem; }
     h3 { font-size: 1rem; }
+    .apple-hero {
+        padding: 18px 0 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 18px;
+    }
+    .apple-hero h1 {
+        font-size: clamp(2.1rem, 5vw, 4.9rem);
+        line-height: 1.02;
+        font-weight: 760;
+        margin: 0;
+        color: #f5f5f7;
+    }
+    .apple-hero h2 {
+        font-size: clamp(1.05rem, 2vw, 1.65rem);
+        line-height: 1.25;
+        font-weight: 560;
+        color: #a1a1a6;
+        margin: 8px 0 0;
+    }
+    .apple-hero p {
+        max-width: 780px;
+        color: #c7c7cc;
+        margin: 16px 0 0;
+        font-size: 1rem;
+        line-height: 1.45;
+    }
     p, label, span, div { color: inherit; }
     .stCaption, [data-testid="stCaptionContainer"] { color: var(--muted); }
     [data-testid="stMetric"] {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 8px;
-        padding: 12px 14px;
-        border-top: 4px solid var(--teal);
-        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.36);
+        padding: 14px 16px;
+        backdrop-filter: blur(18px);
+        box-shadow: 0 22px 44px rgba(0, 0, 0, 0.34);
     }
-    [data-testid="column"]:nth-of-type(2n) [data-testid="stMetric"] { border-top-color: var(--amber); }
-    [data-testid="column"]:nth-of-type(3n) [data-testid="stMetric"] { border-top-color: var(--rust); }
-    [data-testid="column"]:nth-of-type(4n) [data-testid="stMetric"] { border-top-color: var(--plum); }
     [data-testid="stMetricLabel"] { color: var(--muted); }
-    [data-testid="stTabs"] button { color: var(--muted); }
-    [data-testid="stTabs"] button[aria-selected="true"] { color: var(--ink); }
+    [data-testid="stTabs"] {
+        background: rgba(28, 28, 30, 0.56);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 4px;
+        backdrop-filter: blur(18px);
+    }
+    [data-testid="stTabs"] button {
+        color: var(--muted);
+        border-radius: 7px;
+        min-height: 38px;
+    }
+    [data-testid="stTabs"] button[aria-selected="true"] {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.1);
+    }
     [data-baseweb="select"] > div,
     [data-baseweb="input"] > div,
     [data-baseweb="tag"] {
@@ -95,6 +162,14 @@ st.markdown(
         border: 1px solid var(--line);
         border-radius: 8px;
         overflow: hidden;
+    }
+    [data-testid="stPlotlyChart"] {
+        background: rgba(28, 28, 30, 0.52);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px;
+        backdrop-filter: blur(18px);
+        box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
     }
     </style>
     """,
@@ -244,8 +319,16 @@ month_max = metadata["suburb"]["month_max"]
 suburb_index = load_parquet("suburb_index.parquet")
 nsw_monthly = load_parquet("nsw_monthly_by_category.parquet")
 
-st.title("CrimeStoppers Crimes Analysus Dashboard")
-st.caption("Advanced build: hotspot maps, seasonality heatmaps, treemaps, and LGA rate-volume analysis")
+st.markdown(
+    """
+    <section class="apple-hero">
+        <h1>Crime Analysis Dashboard</h1>
+        <h2>CrimeStoppers</h2>
+        <p>Explore NSW crime trends with suburb drill-downs, LGA comparisons, seasonality heatmaps, and BOCSAR hotspot mapping.</p>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
     st.header("Filters")
