@@ -1,6 +1,6 @@
-# CrimeStoppers Crimes Analysus Dashboard
+# Crime Analysis Dashboard
 
-Dark Streamlit dashboard for analysing NSW BOCSAR crime data with suburb
+CrimeStoppers dashboard for analysing NSW BOCSAR crime data with suburb
 trends, LGA rankings, advanced charts, and hotspot maps.
 
 ## Run the Dashboard
