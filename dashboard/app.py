@@ -102,10 +102,15 @@ st.markdown(
         color: var(--ink);
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
     }
-    [data-testid="stHeader"] {
-        background: rgba(0, 0, 0, 0.74);
-        backdrop-filter: blur(22px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    #MainMenu,
+    footer {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
     }
     [data-testid="stSidebar"] {
         background:
@@ -116,7 +121,7 @@ st.markdown(
     [data-testid="stSidebar"] * { color: var(--ink); }
     [data-testid="stSidebar"] [data-baseweb="radio"] label,
     [data-testid="stSidebar"] [data-baseweb="slider"] { color: var(--ink); }
-    .block-container { padding-top: 2rem; max-width: 1500px; }
+    .block-container { padding-top: 0.9rem; max-width: 1500px; }
     h1, h2, h3 {
         letter-spacing: 0;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif;
