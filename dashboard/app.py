@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from html import escape
 import json
 import re
 import subprocess
@@ -20,32 +21,48 @@ MONTH_COL = re.compile(r"^\d{4}-\d{2}$")
 
 PALETTE = [
     "#0A84FF",
-    "#30D158",
-    "#FF9F0A",
+    "#32D74B",
+    "#FFD60A",
+    "#FF453A",
     "#BF5AF2",
     "#64D2FF",
-    "#FF453A",
-    "#FFD60A",
+    "#FF9F0A",
     "#5E5CE6",
     "#FF375F",
-    "#32D74B",
+    "#66D9E8",
 ]
-HEAT_SCALE = ["#050505", "#18202c", "#0A84FF", "#30D158", "#FF9F0A", "#FF453A"]
-MAP_DENSITY_COLORS = {"Low": "#FF9F0A", "Medium": "#FF453A", "High": "#BF5AF2"}
+HEAT_SCALE = ["#050505", "#172033", "#0A84FF", "#32D74B", "#FFD60A", "#FF453A"]
+MAP_DENSITY_COLORS = {"Low": "#FFD60A", "Medium": "#FF9F0A", "High": "#FF453A"}
 SYSTEM_FONT = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, sans-serif"
-pio.templates["crimestoppers_apple_dark"] = go.layout.Template(
+CHART_BG = "rgba(12,14,20,0.46)"
+pio.templates["crimestoppers_premium_dark"] = go.layout.Template(
     layout=go.Layout(
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(255,255,255,0.025)",
+        plot_bgcolor=CHART_BG,
         font={"family": SYSTEM_FONT, "color": "#F5F5F7"},
-        title={"font": {"size": 20, "color": "#F5F5F7"}},
+        title={"font": {"size": 19, "color": "#F5F5F7"}, "x": 0.02},
         colorway=PALETTE,
-        xaxis={"gridcolor": "rgba(255,255,255,0.08)", "zerolinecolor": "rgba(255,255,255,0.14)"},
-        yaxis={"gridcolor": "rgba(255,255,255,0.08)", "zerolinecolor": "rgba(255,255,255,0.14)"},
-        legend={"font": {"color": "#D1D1D6"}},
+        xaxis={
+            "gridcolor": "rgba(255,255,255,0.06)",
+            "zerolinecolor": "rgba(255,255,255,0.14)",
+            "linecolor": "rgba(255,255,255,0.1)",
+            "tickfont": {"color": "#B8B8C2"},
+        },
+        yaxis={
+            "gridcolor": "rgba(255,255,255,0.06)",
+            "zerolinecolor": "rgba(255,255,255,0.14)",
+            "linecolor": "rgba(255,255,255,0.1)",
+            "tickfont": {"color": "#B8B8C2"},
+        },
+        legend={"font": {"color": "#D1D1D6"}, "orientation": "h", "y": -0.2},
+        hoverlabel={
+            "bgcolor": "rgba(18,20,28,0.96)",
+            "bordercolor": "rgba(255,255,255,0.18)",
+            "font": {"family": SYSTEM_FONT, "color": "#F5F5F7"},
+        },
     )
 )
-pio.templates.default = "crimestoppers_apple_dark"
+pio.templates.default = "crimestoppers_premium_dark"
 
 
 st.set_page_config(
@@ -59,19 +76,29 @@ st.markdown(
     <style>
     :root {
         --surface: #000000;
-        --panel: rgba(28, 28, 30, 0.72);
-        --panel-2: rgba(44, 44, 46, 0.78);
-        --line: rgba(255, 255, 255, 0.13);
+        --panel: rgba(19, 21, 30, 0.82);
+        --panel-2: rgba(31, 34, 46, 0.88);
+        --line: rgba(255, 255, 255, 0.14);
         --ink: #f5f5f7;
-        --muted: #a1a1a6;
+        --muted: #aeb0bb;
+        --soft: #747987;
         --blue: #0A84FF;
-        --green: #30D158;
+        --green: #32D74B;
         --orange: #FF9F0A;
         --purple: #BF5AF2;
+        --rose: #FF375F;
+        --gold: #FFD60A;
+        --uts-blue: #0f4beb;
+        --uts-red: #ff2305;
+        --uts-dark-grey: #323232;
+        --uts-light-grey: #ebebeb;
+        --uts-mid-grey: #b2b2b2;
     }
     .stApp {
         background:
-            linear-gradient(180deg, #050505 0%, #000000 42%, #030407 100%);
+            linear-gradient(135deg, rgba(10,132,255,0.16) 0%, transparent 22%),
+            linear-gradient(225deg, rgba(255,159,10,0.11) 0%, transparent 26%),
+            linear-gradient(180deg, #030305 0%, #07080d 42%, #000000 100%);
         color: var(--ink);
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
     }
@@ -81,14 +108,15 @@ st.markdown(
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
     [data-testid="stSidebar"] {
-        background: rgba(12, 12, 14, 0.82);
+        background:
+            linear-gradient(180deg, rgba(18, 20, 28, 0.94), rgba(4, 5, 8, 0.96));
         backdrop-filter: blur(24px);
         border-right: 1px solid var(--line);
     }
     [data-testid="stSidebar"] * { color: var(--ink); }
     [data-testid="stSidebar"] [data-baseweb="radio"] label,
     [data-testid="stSidebar"] [data-baseweb="slider"] { color: var(--ink); }
-    .block-container { padding-top: 2rem; max-width: 1480px; }
+    .block-container { padding-top: 2rem; max-width: 1500px; }
     h1, h2, h3 {
         letter-spacing: 0;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif;
@@ -96,31 +124,136 @@ st.markdown(
     h1 { font-size: 2rem; font-weight: 720; margin-bottom: .1rem; }
     h2 { font-size: 1.25rem; margin-top: .4rem; }
     h3 { font-size: 1rem; }
-    .apple-hero {
-        padding: 18px 0 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    .premium-hero {
+        position: relative;
+        padding: 24px 28px 28px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background:
+            radial-gradient(circle at 10% 0%, rgba(15, 75, 235, 0.42), transparent 36%) padding-box,
+            radial-gradient(circle at 98% 18%, rgba(255, 35, 5, 0.18), transparent 28%) padding-box,
+            linear-gradient(135deg, rgba(50, 50, 50, 0.97), rgba(9, 11, 18, 0.99) 48%, rgba(0, 0, 0, 0.98)) padding-box,
+            linear-gradient(135deg, var(--uts-blue), rgba(235,235,235,0.5) 56%, var(--uts-red)) border-box;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.18),
+            0 34px 90px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(15, 75, 235, 0.12);
+        margin-bottom: 22px;
+        overflow: hidden;
+    }
+    .premium-hero:before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(110deg, rgba(15,75,235,0.18) 0%, transparent 36%, rgba(255,35,5,0.09) 100%),
+            repeating-linear-gradient(90deg, rgba(235,235,235,0.035) 0 1px, transparent 1px 82px);
+        opacity: 0.72;
+        pointer-events: none;
+    }
+    .premium-hero > * { position: relative; z-index: 1; }
+    .hero-kicker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
         margin-bottom: 18px;
     }
-    .apple-hero h1 {
-        font-size: clamp(2.1rem, 5vw, 4.9rem);
+    .hero-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 5px 10px;
+        border: 1px solid rgba(235,235,235,0.16);
+        border-radius: 999px;
+        background: rgba(0,0,0,0.34);
+        color: var(--uts-light-grey);
+        font-size: 0.78rem;
+        font-weight: 650;
+        letter-spacing: 0;
+    }
+    .premium-hero h1 {
+        font-size: clamp(2.45rem, 5.8vw, 5.6rem);
         line-height: 1.02;
-        font-weight: 760;
+        font-weight: 780;
         margin: 0;
         color: #f5f5f7;
+        text-wrap: balance;
     }
-    .apple-hero h2 {
-        font-size: clamp(1.05rem, 2vw, 1.65rem);
+    .premium-hero h2 {
+        font-size: clamp(1.12rem, 2vw, 1.75rem);
         line-height: 1.25;
-        font-weight: 560;
-        color: #a1a1a6;
-        margin: 8px 0 0;
+        font-weight: 620;
+        color: #d8d9df;
+        margin: 10px 0 0;
     }
-    .apple-hero p {
-        max-width: 780px;
-        color: #c7c7cc;
+    .premium-hero p {
+        max-width: 860px;
+        color: #c7cad4;
         margin: 16px 0 0;
-        font-size: 1rem;
-        line-height: 1.45;
+        font-size: 1.05rem;
+        line-height: 1.5;
+    }
+    .premium-metric {
+        --tone: var(--blue);
+        min-height: 138px;
+        margin-bottom: 28px;
+        padding: 18px 18px 16px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background:
+            linear-gradient(150deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035)) padding-box,
+            linear-gradient(135deg, color-mix(in srgb, var(--tone) 84%, white 8%), rgba(255,255,255,0.08) 46%, rgba(255,255,255,0.02)) border-box;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.16),
+            0 24px 54px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(22px);
+        overflow: hidden;
+        position: relative;
+    }
+    .premium-metric:before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--tone), transparent);
+        opacity: 0.85;
+    }
+    .premium-metric.tone-green { --tone: var(--green); }
+    .premium-metric.tone-gold { --tone: var(--gold); }
+    .premium-metric.tone-rose { --tone: var(--rose); }
+    .premium-metric.tone-purple { --tone: var(--purple); }
+    .metric-label {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 650;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .metric-value {
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, sans-serif;
+        font-size: clamp(1.65rem, 3.3vw, 2.65rem);
+        font-weight: 760;
+        line-height: 1.02;
+        overflow-wrap: anywhere;
+    }
+    .metric-delta {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+        font-weight: 600;
+    }
+    .metric-delta.positive { color: #32D74B; }
+    .metric-delta.negative { color: #FF453A; }
+    .metric-delta.neutral { color: #D1D1D6; }
+    .section-title {
+        margin: 18px 0 12px;
+        color: #f5f5f7;
+        font-size: 1.05rem;
+        font-weight: 720;
     }
     p, label, span, div { color: inherit; }
     .stCaption, [data-testid="stCaptionContainer"] { color: var(--muted); }
@@ -134,20 +267,59 @@ st.markdown(
     }
     [data-testid="stMetricLabel"] { color: var(--muted); }
     [data-testid="stTabs"] {
-        background: rgba(28, 28, 30, 0.56);
+        background: rgba(10, 12, 18, 0.72);
         border: 1px solid var(--line);
         border-radius: 8px;
-        padding: 4px;
-        backdrop-filter: blur(18px);
+        padding: 8px 10px 4px;
+        backdrop-filter: blur(22px);
+        box-shadow: 0 18px 46px rgba(0,0,0,0.32);
+    }
+    [data-testid="stTabs"] [role="tablist"] {
+        gap: 12px;
+        align-items: center;
+        overflow-x: auto;
+        padding-bottom: 6px;
     }
     [data-testid="stTabs"] button {
         color: var(--muted);
         border-radius: 7px;
-        min-height: 38px;
+        min-height: 52px;
+        min-width: max-content;
+        padding: 0 24px !important;
+        margin: 0 0 6px !important;
+        background: rgba(255, 255, 255, 0.035);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+    [data-testid="stTabs"] button [data-testid="stMarkdownContainer"] {
+        display: flex;
+        align-items: center;
+        padding: 0 !important;
+    }
+    [data-testid="stTabs"] button p {
+        margin: 0;
+        padding: 0;
+        line-height: 1.15;
+        white-space: nowrap;
+        font-weight: 650;
+    }
+    [data-testid="stTabs"] button:hover {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.12);
     }
     [data-testid="stTabs"] button[aria-selected="true"] {
         color: var(--ink);
-        background: rgba(255, 255, 255, 0.1);
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+        border-color: rgba(255, 255, 255, 0.22);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.18),
+            0 8px 22px rgba(0, 0, 0, 0.22);
     }
     [data-baseweb="select"] > div,
     [data-baseweb="input"] > div,
@@ -164,12 +336,26 @@ st.markdown(
         overflow: hidden;
     }
     [data-testid="stPlotlyChart"] {
-        background: rgba(28, 28, 30, 0.52);
-        border: 1px solid var(--line);
+        background:
+            linear-gradient(150deg, rgba(255,255,255,0.095), rgba(255,255,255,0.025));
+        border: 1px solid rgba(255,255,255,0.13);
         border-radius: 8px;
-        padding: 8px;
-        backdrop-filter: blur(18px);
-        box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
+        padding: 10px;
+        backdrop-filter: blur(22px);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.12),
+            0 28px 64px rgba(0, 0, 0, 0.38);
+        overflow: hidden;
+    }
+    [data-testid="stExpander"] {
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        background: rgba(12,14,20,0.66);
+    }
+    @media (max-width: 720px) {
+        .block-container { padding-left: 1rem; padding-right: 1rem; }
+        .premium-hero { padding: 20px 18px 22px; }
+        .premium-metric { min-height: 124px; }
     }
     </style>
     """,
@@ -247,8 +433,94 @@ def format_pct(value: float | None) -> str:
     return f"{value:+.1f}%"
 
 
+def metric_state(delta: str | None) -> str:
+    if not delta:
+        return "neutral"
+    text = str(delta).strip()
+    if text.startswith("+"):
+        return "positive"
+    if text.startswith("-"):
+        return "negative"
+    return "neutral"
+
+
+def render_metric_card(
+    label: str,
+    value: str | int | float,
+    delta: str | int | float | None = None,
+    tone: str = "blue",
+    state: str | None = None,
+) -> None:
+    safe_label = escape(str(label))
+    safe_value = escape(str(value))
+    safe_delta = "" if delta is None else escape(str(delta))
+    delta_markup = ""
+    if safe_delta:
+        delta_class = state or metric_state(safe_delta)
+        delta_markup = f'<p class="metric-delta {delta_class}">{safe_delta}</p>'
+    st.markdown(
+        f"""
+        <div class="premium-metric tone-{tone}">
+            <p class="metric-label">{safe_label}</p>
+            <div class="metric-value">{safe_value}</div>
+            {delta_markup}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def section_title(title: str) -> None:
+    st.markdown(f'<div class="section-title">{escape(title)}</div>', unsafe_allow_html=True)
+
+
 def month_columns(df: pd.DataFrame) -> list[str]:
     return [col for col in df.columns if MONTH_COL.match(str(col))]
+
+
+def polish_figure(fig: go.Figure, height: int | None = None, showlegend: bool | None = None) -> go.Figure:
+    layout: dict[str, object] = {
+        "margin": dict(l=12, r=12, t=58, b=16),
+        "font": {"family": SYSTEM_FONT, "color": "#F5F5F7"},
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "plot_bgcolor": CHART_BG,
+        "hoverlabel": {
+            "bgcolor": "rgba(16,18,26,0.97)",
+            "bordercolor": "rgba(255,255,255,0.18)",
+            "font": {"family": SYSTEM_FONT, "color": "#F5F5F7"},
+        },
+    }
+    if height is not None:
+        layout["height"] = height
+    if showlegend is not None:
+        layout["showlegend"] = showlegend
+    fig.update_layout(**layout)
+    fig.update_xaxes(
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.055)",
+        zerolinecolor="rgba(255,255,255,0.12)",
+        linecolor="rgba(255,255,255,0.1)",
+        tickfont={"color": "#B8B8C2"},
+        title_font={"color": "#D1D1D6"},
+    )
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.055)",
+        zerolinecolor="rgba(255,255,255,0.12)",
+        linecolor="rgba(255,255,255,0.1)",
+        tickfont={"color": "#B8B8C2"},
+        title_font={"color": "#D1D1D6"},
+    )
+    fig.update_traces(
+        marker={"line": {"width": 0}, "opacity": 0.94},
+        selector={"type": "bar"},
+    )
+    fig.update_traces(
+        line={"width": 3},
+        marker={"size": 7, "line": {"width": 1.4, "color": "rgba(255,255,255,0.78)"}},
+        selector={"type": "scatter"},
+    )
+    return fig
 
 
 def annual_line(df: pd.DataFrame, x: str, y: str, color: str, title: str) -> go.Figure:
@@ -261,12 +533,8 @@ def annual_line(df: pd.DataFrame, x: str, y: str, color: str, title: str) -> go.
         color_discrete_sequence=PALETTE,
         title=title,
     )
-    fig.update_layout(
-        height=390,
-        margin=dict(l=8, r=8, t=48, b=8),
-        legend_title_text="",
-        hovermode="x unified",
-    )
+    fig.update_layout(legend_title_text="", hovermode="x unified")
+    polish_figure(fig, height=400)
     fig.update_yaxes(title="Incidents", rangemode="tozero")
     return fig
 
@@ -281,7 +549,7 @@ def compact_bar(df: pd.DataFrame, x: str, y: str, title: str, color: str | None 
         color_discrete_sequence=PALETTE,
         title=title,
     )
-    fig.update_layout(height=430, margin=dict(l=8, r=8, t=48, b=8), showlegend=False)
+    polish_figure(fig, height=440, showlegend=False)
     fig.update_xaxes(title="Incidents")
     fig.update_yaxes(title="")
     return fig
@@ -320,11 +588,16 @@ suburb_index = load_parquet("suburb_index.parquet")
 nsw_monthly = load_parquet("nsw_monthly_by_category.parquet")
 
 st.markdown(
-    """
-    <section class="apple-hero">
+    f"""
+    <section class="premium-hero">
+        <div class="hero-kicker">
+            <span class="hero-chip">NSW Open Data</span>
+            <span class="hero-chip">BOCSAR {escape(month_min)} to {escape(month_max)}</span>
+            <span class="hero-chip">{latest_year} Intelligence View</span>
+        </div>
         <h1>Crime Analysis Dashboard</h1>
         <h2>CrimeStoppers</h2>
-        <p>Explore NSW crime trends with suburb drill-downs, LGA comparisons, seasonality heatmaps, and BOCSAR hotspot mapping.</p>
+        <p>NSW crime intelligence shaped for fast scanning, suburb drill-downs, LGA comparisons, seasonality patterns, and hotspot mapping.</p>
     </section>
     """,
     unsafe_allow_html=True,
@@ -366,10 +639,37 @@ with overview_tab:
     top_suburb = suburb_index.iloc[0]
 
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric(f"NSW Incidents {latest_year}", format_number(total_latest), format_pct(change_pct))
-    k2.metric("Top Category", top_category["Offence category"], format_number(top_category["incidents"]))
-    k3.metric("Top Suburb", top_suburb["Suburb"], format_number(top_suburb[f"incidents_{latest_year}"]))
-    k4.metric("Tracked Suburbs", format_number(metadata["suburb"]["area_count"]), f"{metadata['suburb']['category_count']} categories")
+    with k1:
+        render_metric_card(
+            f"NSW Incidents {latest_year}",
+            format_number(total_latest),
+            format_pct(change_pct),
+            tone="blue",
+        )
+    with k2:
+        render_metric_card(
+            "Top Category",
+            top_category["Offence category"],
+            f"{format_number(top_category['incidents'])} incidents",
+            tone="green",
+            state="neutral",
+        )
+    with k3:
+        render_metric_card(
+            "Top Suburb",
+            top_suburb["Suburb"],
+            f"{format_number(top_suburb[f'incidents_{latest_year}'])} incidents",
+            tone="gold",
+            state="neutral",
+        )
+    with k4:
+        render_metric_card(
+            "Tracked Suburbs",
+            format_number(metadata["suburb"]["area_count"]),
+            f"{metadata['suburb']['category_count']} offence categories",
+            tone="purple",
+            state="neutral",
+        )
 
     selected_categories = st.multiselect(
         "Offence categories",
@@ -392,7 +692,8 @@ with overview_tab:
         color_discrete_sequence=PALETTE,
         title="NSW Monthly Incidents",
     )
-    fig.update_layout(height=420, hovermode="x unified", legend_title_text="", margin=dict(l=8, r=8, t=48, b=8))
+    fig.update_layout(hovermode="x unified", legend_title_text="")
+    polish_figure(fig, height=430)
     st.plotly_chart(fig, use_container_width=True)
 
     c1, c2 = st.columns([1, 1])
@@ -430,7 +731,7 @@ with overview_tab:
             title="Seasonality Heatmap",
             labels=dict(x="Year", y="Month", color="Incidents"),
         )
-        heat_fig.update_layout(height=410, margin=dict(l=8, r=8, t=48, b=8))
+        polish_figure(heat_fig, height=420)
         st.plotly_chart(heat_fig, use_container_width=True)
     with h2:
         tree = category_2025.head(14).copy()
@@ -442,7 +743,7 @@ with overview_tab:
             color_continuous_scale=HEAT_SCALE,
             title=f"Category Composition {latest_year}",
         )
-        tree_fig.update_layout(height=410, margin=dict(l=8, r=8, t=48, b=8))
+        polish_figure(tree_fig, height=420)
         st.plotly_chart(tree_fig, use_container_width=True)
 
 with suburb_tab:
@@ -468,10 +769,24 @@ with suburb_tab:
 
     suburb_latest = suburb_index[suburb_index["Suburb"] == selected_suburb].iloc[0]
     m1, m2, m3 = st.columns(3)
-    m1.metric(f"{selected_suburb} Incidents {latest_year}", format_number(suburb_latest[f"incidents_{latest_year}"]), format_pct(suburb_latest["change_pct_vs_prior"]))
-    m2.metric("Largest Category", suburb_latest[f"top_category_{latest_year}"], format_number(suburb_latest[f"top_category_incidents_{latest_year}"]))
+    with m1:
+        render_metric_card(
+            f"{selected_suburb} Incidents {latest_year}",
+            format_number(suburb_latest[f"incidents_{latest_year}"]),
+            format_pct(suburb_latest["change_pct_vs_prior"]),
+            tone="blue",
+        )
+    with m2:
+        render_metric_card(
+            "Largest Category",
+            suburb_latest[f"top_category_{latest_year}"],
+            f"{format_number(suburb_latest[f'top_category_incidents_{latest_year}'])} incidents",
+            tone="rose",
+            state="neutral",
+        )
     rank = int(suburb_index.index[suburb_index["Suburb"] == selected_suburb][0]) + 1
-    m3.metric("NSW Suburb Rank", f"#{rank}", "by total incidents")
+    with m3:
+        render_metric_card("NSW Suburb Rank", f"#{rank}", "By total incidents", tone="purple", state="neutral")
 
     annual = suburb_yearly[
         (suburb_yearly["Suburb"] == selected_suburb)
@@ -527,7 +842,7 @@ with suburb_tab:
         title=f"{selected_suburb}: Category Intensity",
         labels=dict(x="Year", y="Category", color="Incidents"),
     )
-    suburb_heat.update_layout(height=460, margin=dict(l=8, r=8, t=48, b=8))
+    polish_figure(suburb_heat, height=470)
     st.plotly_chart(suburb_heat, use_container_width=True)
 
     with st.expander("Monthly detail", expanded=False):
@@ -556,7 +871,8 @@ with suburb_tab:
             color_discrete_sequence=PALETTE,
             title="Monthly Detail",
         )
-        detail_fig.update_layout(height=380, hovermode="x unified", legend_title_text="", margin=dict(l=8, r=8, t=48, b=8))
+        detail_fig.update_layout(hovermode="x unified", legend_title_text="")
+        polish_figure(detail_fig, height=390)
         st.plotly_chart(detail_fig, use_container_width=True)
 
 with lga_tab:
@@ -579,7 +895,13 @@ with lga_tab:
     with c1:
         top_lga = ranked.iloc[0] if not ranked.empty else None
         if top_lga is not None:
-            st.metric("Highest LGA", top_lga["lga"], format_number(top_lga[metric]))
+            render_metric_card(
+                "Highest LGA",
+                top_lga["lga"],
+                format_number(top_lga[metric]),
+                tone="gold",
+                state="neutral",
+            )
         display_cols = [
             "lga",
             "incidents_2025",
@@ -636,7 +958,8 @@ with lga_tab:
         title=f"Rate vs Volume: {offence}",
         labels={"incidents_2025": "Incidents 2025", "rate_2025": "Rate per 100,000"},
     )
-    scatter_fig.update_layout(height=430, margin=dict(l=8, r=8, t=48, b=8), legend_title_text="2-year trend")
+    scatter_fig.update_layout(legend_title_text="2-year trend")
+    polish_figure(scatter_fig, height=440)
     st.plotly_chart(scatter_fig, use_container_width=True)
 
     with st.expander("LGA total incident index", expanded=False):
@@ -678,9 +1001,12 @@ with map_tab:
     )
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("Layer", selected_layer_label, selected_layer["period"])
-    m2.metric("Hotspot Polygons", format_number(len(map_rows)))
-    m3.metric("Published Layers", format_number(len(hotspot_layers)))
+    with m1:
+        render_metric_card("Layer", selected_layer_label, selected_layer["period"], tone="blue", state="neutral")
+    with m2:
+        render_metric_card("Hotspot Polygons", format_number(len(map_rows)), tone="rose")
+    with m3:
+        render_metric_card("Published Layers", format_number(len(hotspot_layers)), tone="purple")
 
     map_fig = px.choropleth_mapbox(
         map_rows,
@@ -697,7 +1023,26 @@ with map_tab:
         opacity=0.62,
         title=f"{selected_layer_label} Hotspots",
     )
-    map_fig.update_layout(height=650, margin=dict(l=0, r=0, t=48, b=0), legend_title_text="Density")
+    map_fig.update_traces(marker_line_width=0.8, marker_line_color="rgba(7, 8, 12, 0.54)")
+    map_fig.update_layout(
+        height=780,
+        margin=dict(l=0, r=0, t=58, b=0),
+        legend=dict(
+            title=dict(text="Density", font=dict(family=SYSTEM_FONT, color="#D1D1D6", size=13)),
+            orientation="h",
+            x=0.018,
+            y=0.026,
+            xanchor="left",
+            yanchor="bottom",
+            bgcolor="rgba(8, 10, 16, 0.78)",
+            bordercolor="rgba(255, 255, 255, 0.16)",
+            borderwidth=1,
+            font=dict(family=SYSTEM_FONT, color="#F5F5F7", size=13),
+            itemsizing="constant",
+        ),
+        mapbox=dict(domain=dict(x=[0, 1], y=[0, 1]), center=center, zoom=5.3),
+        paper_bgcolor="rgba(0,0,0,0)",
+    )
     st.plotly_chart(map_fig, use_container_width=True)
 
     c1, c2 = st.columns([1, 1])
@@ -716,16 +1061,20 @@ with map_tab:
             color_continuous_scale=HEAT_SCALE,
             title="Available Hotspot Layer Sizes",
         )
-        layer_fig.update_layout(height=430, margin=dict(l=8, r=8, t=48, b=8), yaxis_title="", xaxis_title="Polygons")
+        polish_figure(layer_fig, height=440)
+        layer_fig.update_layout(yaxis_title="", xaxis_title="Polygons")
         st.plotly_chart(layer_fig, use_container_width=True)
 
 with catalogue_tab:
     manifest = load_manifest()
     processed_files = sorted(DATA_DIR.glob("*.parquet"))
     f1, f2, f3 = st.columns(3)
-    f1.metric("Raw Files", format_number(len(manifest) if not manifest.empty else 0))
-    f2.metric("Processed Tables", format_number(len(processed_files)))
-    f3.metric("Built At", metadata["built_at"].split("T")[0])
+    with f1:
+        render_metric_card("Raw Files", format_number(len(manifest) if not manifest.empty else 0), tone="blue")
+    with f2:
+        render_metric_card("Processed Tables", format_number(len(processed_files)), tone="green")
+    with f3:
+        render_metric_card("Built At", metadata["built_at"].split("T")[0], tone="gold")
 
     st.subheader("Processed Tables")
     processed_summary = []
